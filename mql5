@@ -1,0 +1,128 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                   TrendSurf.mq5 |
+//|                      Copyright 2022, Forex Robot Easy Team       |
+//|                        https://www.forexroboteasy.com             |
+//+------------------------------------------------------------------+
+#property copyright 'Copyright 2022, Forex Robot Easy Team'
+#property link      'https://www.forexroboteasy.com'
+
+// Input parameters
+input double StopLoss = 50.0;  // Fixed stop loss in pips
+
+// Global variables
+datetime fridayCloseTime;  // Friday night closing time
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Set Friday night closing time
+   fridayCloseTime = GetFridayCloseTime();
+
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Close any open positions on deinitialization
+   CloseAllPositions();
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Check if it is time to close positions
+   if (TimeCurrent() >= fridayCloseTime)
+   {
+      CloseAllPositions();
+      return;
+   }
+
+   // Check for long-term trends
+   bool isLongTermTrendUp = CheckLongTermTrend();
+
+   // Enter trades based on identified trends
+   if (isLongTermTrendUp)
+   {
+      // Enter long trade
+      OpenLongTrade();
+   }
+   else
+   {
+      // Enter short trade
+      OpenShortTrade();
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Function to close all open positions                             |
+//+------------------------------------------------------------------+
+void CloseAllPositions()
+{
+   // Close all open positions
+   int totalPositions = PositionsTotal();
+   for (int i = totalPositions - 1; i >= 0; i--)
+   {
+      // Close position at predefined stop loss level
+      if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+      {
+         double stopLossLevel = OrderOpenPrice() - StopLoss * Point;
+         if (OrderType() == OP_BUY && Bid <= stopLossLevel)
+         {
+            OrderClose(OrderTicket(), OrderLots(), Bid, 0, clrRed);
+         }
+         else if (OrderType() == OP_SELL && Ask >= stopLossLevel)
+         {
+            OrderClose(OrderTicket(), OrderLots(), Ask, 0, clrRed);
+         }
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Function to check long-term trends                               |
+//+------------------------------------------------------------------+
+bool CheckLongTermTrend()
+{
+   // Insert code to analyze long-term trends here
+   // Return true if long-term trend is up, false otherwise
+   return true;
+}
+
+//+------------------------------------------------------------------+
+//| Function to open a long trade                                     |
+//+------------------------------------------------------------------+
+void OpenLongTrade()
+{
+   // Insert code to open a long trade here
+}
+
+//+------------------------------------------------------------------+
+//| Function to open a short trade                                    |
+//+------------------------------------------------------------------+
+void OpenShortTrade()
+{
+   // Insert code to open a short trade here
+}
+
+//+------------------------------------------------------------------+
+//| Function to get Friday night closing time                         |
+//+------------------------------------------------------------------+
+datetime GetFridayCloseTime()
+{
+   static datetime fridayCloseTime = 0;
+   if (fridayCloseTime == 0)
+   {
+      datetime fridayTime = TimeCurrent();
+      int daysUntilFriday = 4 - DayOfWeek(fridayTime);  // Friday is the 5th day of the week
+      fridayCloseTime = fridayTime + daysUntilFriday * 24 * 60 * 60;  // Convert days to seconds
+   }
+   return fridayCloseTime;
+}
